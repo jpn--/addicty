@@ -16,7 +16,14 @@ class CHILD_CLASS(Dict):
 
 TEST_VAL = [1, 2, 3]
 TEST_DICT = {'a': {'b': {'c': TEST_VAL}}}
-
+TEST_DICT_YAML = """---
+a:
+  b:
+    c:
+    - 1
+    - 2
+    - 3
+..."""
 
 class AbstractTestsClass(object):
     dict_class = None
@@ -123,7 +130,7 @@ class AbstractTestsClass(object):
 
     def test_str(self):
         prop = self.dict_class(TEST_DICT)
-        self.assertEqual(str(prop), str(TEST_DICT))
+        self.assertEqual(str(prop), TEST_DICT_YAML)
 
     def test_json(self):
         some_dict = TEST_DICT
@@ -625,6 +632,19 @@ class AbstractTestsClass(object):
         self.assertIsInstance(regular['a'], MyNamedTuple)
         self.assertNotIsInstance(regular['a'][0], self.dict_class)
         self.assertNotIsInstance(regular['a'].x, self.dict_class)
+
+    def test_dump_yaml(self):
+        prop = self.dict_class(TEST_DICT)
+        self.assertEqual(
+            prop.dump(explicit_start=True, explicit_end=True),
+            TEST_DICT_YAML+"\n",
+        )
+
+    def test_load_yaml(self):
+        propy = self.dict_class.load(TEST_DICT_YAML)
+        prop = self.dict_class(TEST_DICT)
+        self.assertEqual(propy, prop)
+
 
 class DictTests(unittest.TestCase, AbstractTestsClass):
     dict_class = Dict

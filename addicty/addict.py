@@ -1,4 +1,7 @@
 import copy
+import os
+import yaml
+import logging
 
 
 class Dict(dict):
@@ -175,3 +178,70 @@ class Dict(dict):
 
     def unfreeze(self):
         self.freeze(False)
+
+    @classmethod
+    def load(
+            cls,
+            filename,
+            logger=None,
+            encoding='utf-8',
+            Loader=yaml.SafeLoader,
+            freeze=True,
+    ):
+        """
+        Load a Dict from a YAML file.
+
+        Parameters
+        ----------
+        filename : str or File-like
+            A filename of a yaml file to load, or the content of a yaml file
+            loaded as a string, or a file-like object from which to load the
+            yaml content.
+        logger : logging.Logger, optional
+            A logger for error messages.
+        encoding : str, default 'utf-8'
+            The encoding of the file to be loaded (if any).
+        Loader : yaml.Loader, optional
+            Defaults to the SafeLoader.
+        freeze : bool, default True
+            Whether to freeze this Dict after loading.
+
+        Returns
+        -------
+        Dict
+        """
+        from .yaml_checker import yaml_check
+        if isinstance(filename, str) and '\n' not in filename:
+            if not os.path.exists(filename):
+                raise FileNotFoundError(filename)
+            yaml_check(filename, logger=logging.getLogger('') if logger is None else logger)
+            with open(filename, 'r', encoding=encoding) as f:
+                result = cls(yaml.load(f, Loader=Loader))
+
+        else:
+            result = cls(yaml.load(filename, Loader=Loader))
+        if freeze:
+            result.freeze(True)
+        return result
+
+    def dump(self, *args, **kwargs):
+        if 'default_flow_style' not in kwargs:
+            kwargs['default_flow_style'] = False
+        if 'indent' not in kwargs:
+            kwargs['indent'] = 2
+        if len(args) and isinstance(args[0], str):
+            if os.path.exists(args[0]):
+                raise FileExistsError(args[0])
+            dirname = os.path.dirname(args[0])
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+            with open(args[0], 'w') as f:
+                yaml.safe_dump(self.to_dict(), f, **kwargs)
+        else:
+            return yaml.safe_dump(self.to_dict(), **kwargs)
+
+    def __repr__(self):
+        return self.dump(
+            explicit_start=True,
+            explicit_end=True,
+        ).rstrip("\n")
