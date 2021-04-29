@@ -3,6 +3,8 @@ import copy
 import unittest
 import pickle
 import collections
+import tempfile
+import os
 from addicty import Dict
 
 
@@ -639,6 +641,20 @@ class AbstractTestsClass(object):
             prop.dump(explicit_start=True, explicit_end=True),
             TEST_DICT_YAML+"\n",
         )
+        # to file
+        with tempfile.TemporaryDirectory() as tmpdir:
+            filename = os.path.join(tmpdir, "dump.yaml")
+            filename2 = os.path.join(tmpdir, "nested_dir", "dump.yaml")
+            prop.dump(filename)
+            prop.dump(filename2)
+            with open(filename, 'r') as f:
+                content = f.read()
+            self.assertEqual(
+                content,
+                "a:\n  b:\n    c:\n    - 1\n    - 2\n    - 3\n"
+            )
+            with self.assertRaises(FileExistsError):
+                prop.dump(filename)
 
     def test_load_yaml(self):
         propy = self.dict_class.load(TEST_DICT_YAML)
@@ -656,7 +672,6 @@ class AbstractTestsClass(object):
             self.dict_class.load("/path/does/not/exist.yaml")
 
     def test_load_yaml_from_file(self):
-        import tempfile, os
         with tempfile.TemporaryDirectory() as tmpdir:
             filename = os.path.join(tmpdir, "temp.yaml")
             with open(filename, 'wt') as f:
