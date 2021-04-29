@@ -3,7 +3,7 @@ import copy
 import unittest
 import pickle
 import collections
-from addict import Dict
+from addicty import Dict
 
 
 # test whether unittests pass on child classes
