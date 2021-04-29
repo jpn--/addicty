@@ -99,7 +99,10 @@ def yaml_check(file, config_file=None, logger=None, encoding='utf-8'):
     if logger is None:
         log = print
     else:
-        log = logger.error
+        try:
+            log = logger.error
+        except:
+            log = logger
 
     try:
         from yamllint import linter

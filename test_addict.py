@@ -644,7 +644,34 @@ class AbstractTestsClass(object):
         propy = self.dict_class.load(TEST_DICT_YAML)
         prop = self.dict_class(TEST_DICT)
         self.assertEqual(propy, prop)
+        # yaml loaded is frozen by default
+        propy.a.b.c = [4,5,6]         # Can set pre-existing key.
+        self.assertEqual(propy.a.b.c, [4,5,6])
+        with self.assertRaises(KeyError):
+            propy.newKey = [7,8,9]     # But can't add a new key.
+        self.assertNotIn("newKey", propy)
 
+    def test_load_missing_file(self):
+        with self.assertRaises(FileNotFoundError):
+            self.dict_class.load("/path/does/not/exist.yaml")
+
+    def test_load_yaml_from_file(self):
+        import tempfile, os
+        with tempfile.TemporaryDirectory() as tmpdir:
+            filename = os.path.join(tmpdir, "temp.yaml")
+            with open(filename, 'wt') as f:
+                f.write("---\na: 11\nb:\n  c: 22\n  d: 33\ne:\n- 44\n- 55\n...")
+            x = self.dict_class.load(filename)
+            self.assertDictEqual(x.to_dict(), {'a':11, 'b':{'c':22, 'd':33}, 'e':[44, 55]})
+
+    def test_load_broken_file(self):
+        import tempfile, os
+        with tempfile.TemporaryDirectory() as tmpdir:
+            filename = os.path.join(tmpdir, "temp.yaml")
+            with open(filename, 'wt') as f:
+                f.write("malformed_content\n  is not ok")
+            with self.assertRaises(ValueError):
+                x = self.dict_class.load(filename)
 
 class DictTests(unittest.TestCase, AbstractTestsClass):
     dict_class = Dict

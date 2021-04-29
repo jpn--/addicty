@@ -214,10 +214,17 @@ class Dict(dict):
         if isinstance(filename, str) and '\n' not in filename:
             if not os.path.exists(filename):
                 raise FileNotFoundError(filename)
-            yaml_check(filename, logger=logging.getLogger('') if logger is None else logger)
+            if logger is not None:
+                yaml_check(filename, logger=logger)
             with open(filename, 'r', encoding=encoding) as f:
-                result = cls(yaml.load(f, Loader=Loader))
-
+                try:
+                    result = cls(yaml.load(f, Loader=Loader))
+                except Exception as err:
+                    from io import StringIO
+                    buffer = StringIO()
+                    err_logger = lambda x: buffer.write(f"{x}\n")
+                    yaml_check(filename, logger=err_logger)
+                    raise ValueError(buffer.getvalue()) from err
         else:
             result = cls(yaml.load(filename, Loader=Loader))
         if freeze:
