@@ -2,9 +2,9 @@
 ![Tests](https://github.com/jpn--/addicty/workflows/Python%20test/badge.svg) [![Coverage Status](https://img.shields.io/coveralls/jpn--/addicty.svg)](https://coveralls.io/r/jpn--/addicty) [![PyPI version](https://badge.fury.io/py/addicty.svg)](https://badge.fury.io/py/addicty) [![Anaconda-Server Badge](https://anaconda.org/conda-forge/addicty/badges/version.svg)](https://anaconda.org/conda-forge/addict)
 
 This repository is a fork of addict, to add some new features, including reading 
-and writing YAML files.
+and writing YAML files, to files and to/from AWS S3.
 
-addict is a Python module that gives you dictionaries whose values are both gettable and settable using attributes, in addition to standard item-syntax.
+addicty is a Python module that gives you dictionaries whose values are both gettable and settable using attributes, in addition to standard item-syntax.
 
 This means that you **don't have to** write dictionaries like this anymore:
 ```Python
