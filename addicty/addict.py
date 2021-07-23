@@ -212,27 +212,26 @@ class Dict(dict):
         Dict
         """
         from .yaml_checker import yaml_check
-        if isinstance(filename, str):
-            if filename.startswith("s3://"):
-                # AWS S3 URI, load from there
-                bucket, key = filename[5:].split("/", 1)
-                from .s3 import from_s3
-                result = from_s3(cls, bucket, key)
-            elif '\n' not in filename:
-                # single line string, treat as a filename
-                if not os.path.exists(filename):
-                    raise FileNotFoundError(filename)
-                if logger is not None:
-                    yaml_check(filename, logger=logger)
-                with open(filename, 'r', encoding=encoding) as f:
-                    try:
-                        result = cls(yaml.load(f, Loader=Loader))
-                    except Exception as err:
-                        from io import StringIO
-                        buffer = StringIO()
-                        err_logger = lambda x: buffer.write(f"{x}\n")
-                        yaml_check(filename, logger=err_logger)
-                        raise ValueError(buffer.getvalue()) from err
+        if isinstance(filename, str) and filename.startswith("s3://"):
+            # AWS S3 URI, load from there
+            bucket, key = filename[5:].split("/", 1)
+            from .s3 import from_s3
+            result = from_s3(cls, bucket, key)
+        elif isinstance(filename, str) and '\n' not in filename:
+            # single line string, treat as a filename
+            if not os.path.exists(filename):
+                raise FileNotFoundError(filename)
+            if logger is not None:
+                yaml_check(filename, logger=logger)
+            with open(filename, 'r', encoding=encoding) as f:
+                try:
+                    result = cls(yaml.load(f, Loader=Loader))
+                except Exception as err:
+                    from io import StringIO
+                    buffer = StringIO()
+                    err_logger = lambda x: buffer.write(f"{x}\n")
+                    yaml_check(filename, logger=err_logger)
+                    raise ValueError(buffer.getvalue()) from err
         else:
             # multi line string, treat as yaml content
             result = cls(yaml.load(filename, Loader=Loader))
