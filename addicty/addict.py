@@ -2,7 +2,7 @@ import copy
 import os
 import yaml
 import logging
-from typing import Mapping
+from typing import Mapping, Sequence
 
 
 def _freeze(x, shouldFreeze=True):
@@ -16,18 +16,19 @@ def _freeze(x, shouldFreeze=True):
 class List(list):
 
     __slots__ = ()
+    _Mapping = None
 
     def freeze(self, shouldFreeze=True):
         for val in self:
-            if isinstance(val, (Dict, List)):
+            if isinstance(val, (self._Mapping, type(self))):
                 val.freeze(shouldFreeze)
 
     def to_list(self):
         base = []
         for value in self:
-            if isinstance(value, List):
+            if isinstance(value, type(self)):
                 base += [value.to_list()]
-            if isinstance(value, Dict):
+            if isinstance(value, self._Mapping):
                 base += [value.to_dict()]
             else:
                 base += [value]
@@ -61,6 +62,8 @@ class List(list):
 
 
 class Dict(dict):
+
+    _Sequence = List
 
     def __init__(__self, *args, **kwargs):
         object.__setattr__(__self, '__parent', kwargs.pop('__parent', None))
@@ -119,12 +122,13 @@ class Dict(dict):
         if isinstance(item, dict):
             return cls(item)
         elif isinstance(item, list):
+            _List = cls._Sequence
             try:
-                return List(cls._hook(elem) for elem in item)
+                return _List(cls._hook(elem) for elem in item)
             except TypeError:
                 # some subclasses don't implement a constructor that
                 # accepts a generator, e.g. namedtuple
-                return List(*(cls._hook(elem) for elem in item))
+                return _List(*(cls._hook(elem) for elem in item))
         elif isinstance(item, tuple):
             try:
                 return type(item)(cls._hook(elem) for elem in item)
@@ -150,27 +154,27 @@ class Dict(dict):
         for key, value in self.items():
             if isinstance(value, type(self)):
                 base[key] = value.to_dict()
-            elif isinstance(value, List):
+            elif isinstance(value, self._Sequence):
                 try:
                     base[key] = list(
-                        item.to_dict() if isinstance(item, type(self)) else
+                        item.to_dict() if isinstance(item, (type(self), self._Sequence)) else
                         item for item in value)
                 except TypeError:
                     # some subclasses don't implement a constructor that
                     # accepts a generator, e.g. namedtuple
                     base[key] = list(*(
-                        item.to_dict() if isinstance(item, type(self)) else
+                        item.to_dict() if isinstance(item, (type(self), self._Sequence)) else
                         item for item in value))
             elif isinstance(value, (list, tuple)):
                 try:
                     base[key] = type(value)(
-                        item.to_dict() if isinstance(item, type(self)) else
+                        item.to_dict() if isinstance(item, (type(self), self._Sequence)) else
                         item for item in value)
                 except TypeError:
                     # some subclasses don't implement a constructor that
                     # accepts a generator, e.g. namedtuple
                     base[key] = type(value)(*(
-                        item.to_dict() if isinstance(item, type(self)) else
+                        item.to_dict() if isinstance(item, (type(self), self._Sequence)) else
                         item for item in value))
             else:
                 base[key] = value
@@ -247,7 +251,7 @@ class Dict(dict):
     def freeze(self, shouldFreeze=True):
         object.__setattr__(self, '__frozen', shouldFreeze)
         for key, val in self.items():
-            if isinstance(val, (Dict, List)):
+            if isinstance(val, (type(self), self._Sequence)):
                 val.freeze(shouldFreeze)
 
     def unfreeze(self):
@@ -302,6 +306,10 @@ class Dict(dict):
                     content = yaml.load(f, Loader=Loader)
                     if isinstance(content, Mapping):
                         result = cls(content)
+                    elif isinstance(content, str):
+                        raise ValueError(content)
+                    elif isinstance(content, Sequence):
+                        result = cls._Sequence(content)
                     else:
                         result = cls({'_top_': content})['_top_']
                 except Exception as err:
@@ -315,10 +323,14 @@ class Dict(dict):
             content = yaml.load(filename, Loader=Loader)
             if isinstance(content, Mapping):
                 result = cls(content)
+            elif isinstance(content, str):
+                raise ValueError(content)
+            elif isinstance(content, Sequence):
+                result = cls._Sequence(content)
             else:
                 result = cls({'_top_': content})['_top_']
         if freeze:
-            _freeze(result, True)
+            result.freeze(True)
         return result
 
     def dump(self, *args, **kwargs):
@@ -346,3 +358,6 @@ class Dict(dict):
             explicit_start=True,
             explicit_end=True,
         ).rstrip("\n")
+
+
+List._Mapping = Dict
