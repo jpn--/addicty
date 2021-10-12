@@ -2,6 +2,61 @@ import copy
 import os
 import yaml
 import logging
+from typing import Mapping
+
+
+def _freeze(x, shouldFreeze=True):
+    if isinstance(x, list):
+        for i in x:
+            _freeze(i, shouldFreeze)
+    else:
+        x.freeze(shouldFreeze)
+
+
+class List(list):
+
+    __slots__ = ()
+
+    def freeze(self, shouldFreeze=True):
+        for i in self:
+            i.freeze(shouldFreeze)
+
+    def to_list(self):
+        base = []
+        for value in self:
+            if isinstance(value, List):
+                base += [value.to_list()]
+            if isinstance(value, Dict):
+                base += [value.to_dict()]
+            else:
+                base += [value]
+        return base
+
+    def dump(self, *args, **kwargs):
+        if 'default_flow_style' not in kwargs:
+            kwargs['default_flow_style'] = False
+        if 'indent' not in kwargs:
+            kwargs['indent'] = 2
+        if len(args) and isinstance(args[0], str):
+            if isinstance(args[0], str) and args[0].startswith("s3://"):
+                bucket, key = args[0][5:].split("/", 1)
+                from .s3 import to_s3
+                return to_s3(self, bucket, key, **kwargs)
+            if os.path.exists(args[0]):
+                raise FileExistsError(args[0])
+            dirname = os.path.dirname(args[0])
+            if not os.path.exists(dirname):
+                os.makedirs(dirname)
+            with open(args[0], 'w') as f:
+                yaml.safe_dump(self.to_list(), f, **kwargs)
+        else:
+            return yaml.safe_dump(self.to_list(), **kwargs)
+
+    def __repr__(self):
+        return self.dump(
+            explicit_start=True,
+            explicit_end=True,
+        ).rstrip("\n")
 
 
 class Dict(dict):
@@ -62,7 +117,14 @@ class Dict(dict):
     def _hook(cls, item):
         if isinstance(item, dict):
             return cls(item)
-        elif isinstance(item, (list, tuple)):
+        elif isinstance(item, list):
+            try:
+                return List(cls._hook(elem) for elem in item)
+            except TypeError:
+                # some subclasses don't implement a constructor that
+                # accepts a generator, e.g. namedtuple
+                return List(*(cls._hook(elem) for elem in item))
+        elif isinstance(item, tuple):
             try:
                 return type(item)(cls._hook(elem) for elem in item)
             except TypeError:
@@ -87,6 +149,17 @@ class Dict(dict):
         for key, value in self.items():
             if isinstance(value, type(self)):
                 base[key] = value.to_dict()
+            elif isinstance(value, List):
+                try:
+                    base[key] = list(
+                        item.to_dict() if isinstance(item, type(self)) else
+                        item for item in value)
+                except TypeError:
+                    # some subclasses don't implement a constructor that
+                    # accepts a generator, e.g. namedtuple
+                    base[key] = list(*(
+                        item.to_dict() if isinstance(item, type(self)) else
+                        item for item in value))
             elif isinstance(value, (list, tuple)):
                 try:
                     base[key] = type(value)(
@@ -225,7 +298,11 @@ class Dict(dict):
                 yaml_check(filename, logger=logger)
             with open(filename, 'r', encoding=encoding) as f:
                 try:
-                    result = cls(yaml.load(f, Loader=Loader))
+                    content = yaml.load(f, Loader=Loader)
+                    if isinstance(content, Mapping):
+                        result = cls(content)
+                    else:
+                        result = cls({'_top_': content})['_top_']
                 except Exception as err:
                     from io import StringIO
                     buffer = StringIO()
@@ -234,9 +311,13 @@ class Dict(dict):
                     raise ValueError(buffer.getvalue()) from err
         else:
             # multi line string, treat as yaml content
-            result = cls(yaml.load(filename, Loader=Loader))
+            content = yaml.load(filename, Loader=Loader)
+            if isinstance(content, Mapping):
+                result = cls(content)
+            else:
+                result = cls({'_top_': content})['_top_']
         if freeze:
-            result.freeze(True)
+            _freeze(result, True)
         return result
 
     def dump(self, *args, **kwargs):
