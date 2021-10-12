@@ -18,8 +18,9 @@ class List(list):
     __slots__ = ()
 
     def freeze(self, shouldFreeze=True):
-        for i in self:
-            i.freeze(shouldFreeze)
+        for val in self:
+            if isinstance(val, (Dict, List)):
+                val.freeze(shouldFreeze)
 
     def to_list(self):
         base = []
@@ -246,7 +247,7 @@ class Dict(dict):
     def freeze(self, shouldFreeze=True):
         object.__setattr__(self, '__frozen', shouldFreeze)
         for key, val in self.items():
-            if isinstance(val, Dict):
+            if isinstance(val, (Dict, List)):
                 val.freeze(shouldFreeze)
 
     def unfreeze(self):
