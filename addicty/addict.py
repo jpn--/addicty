@@ -361,3 +361,47 @@ class Dict(dict):
 
 
 List._Mapping = Dict
+
+
+def load(*filenames, **kwargs):
+    """
+    Read one or more yaml files, aggregating the results.
+
+    At the top level, all files must be mappings, or all lists.
+
+    Parameters
+    ----------
+    *filenames : str
+        Path names for files to load.
+    **kwargs
+        Other keyword arguments are passed to Dict.load() and are common
+        across all loaded files.
+
+    Returns
+    -------
+    Dict or List
+    """
+    if len(filenames) == 0:
+        raise ValueError("must give at least one filename")
+    staged = []
+    for filename in filenames:
+        staged.append(Dict.load(filename, **kwargs))
+    result = staged[0]
+    if isinstance(result, Dict):
+        for s in staged[1:]:
+            if not isinstance(s, Dict):
+                raise ValueError(
+                    "mixed files, addicty.load() expects the top level of "
+                    "files to all be mappings or all lists"
+                )
+            result.update(s)
+        return result
+    else:
+        for s in staged[1:]:
+            if not isinstance(s, List):
+                raise ValueError(
+                    "mixed files, addicty.load() expects the top level of "
+                    "files to all be mappings or all lists"
+                )
+            result.extend(s)
+        return result
