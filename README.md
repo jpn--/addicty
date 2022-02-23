@@ -1,5 +1,5 @@
-# addict
-![Tests](https://github.com/jpn--/addicty/workflows/Python%20package/badge.svg) [![Coverage Status](https://img.shields.io/coveralls/jpn--/addicty.svg)](https://coveralls.io/r/jpn--/addicty) [![PyPI version](https://badge.fury.io/py/addicty.svg)](https://badge.fury.io/py/addicty) [![Anaconda-Server Badge](https://anaconda.org/conda-forge/addicty/badges/version.svg)](https://anaconda.org/conda-forge/addict)
+# addicty
+![Tests](https://github.com/jpn--/addicty/workflows/Python%20package/badge.svg) [![Coverage Status](https://img.shields.io/coveralls/jpn--/addicty.svg)](https://coveralls.io/r/jpn--/addicty) [![PyPI version](https://badge.fury.io/py/addicty.svg)](https://badge.fury.io/py/addicty) [![Anaconda-Server Badge](https://anaconda.org/conda-forge/addicty/badges/version.svg)](https://anaconda.org/conda-forge/addicty)
 
 This repository is a fork of [addict](https://github.com/mewwts/addict), to add some new features, including reading 
 and writing YAML files, to files and to/from AWS S3.
@@ -31,22 +31,22 @@ body.query.filtered.filter.term.created_by = 'Mats'
 ### Installing
 You can install via `pip`
 ```sh
-pip install addict
+pip install addicty
 ```
 
 or through `conda`
 ```sh
-conda install addict -c conda-forge
+conda install addicty -c conda-forge
 ```
 
-Addict runs on Python 2 and Python 3, and every build is tested towards 2.7, 3.6 and 3.7. 
+Addicty runs on Python 3.9. 
 
 ### Usage
-addict inherits from ```dict```, but is more flexible in terms of accessing and setting its values.
+addicty inherits from ```dict```, but is more flexible in terms of accessing and setting its values.
 Working with dictionaries are now a *joy*! Setting the items of a nested Dict is a *dream*:
 
 ```Python
->>> from addict import Dict
+>>> from addicty import Dict
 >>> mapping = Dict()
 >>> mapping.a.b.c.d.e = 2
 >>> mapping
@@ -90,13 +90,13 @@ However feel free to mix the two syntaxes:
 ```
 
 ### Attributes like keys, items etc.
-addict will not let you override attributes that are native to ```dict```, so the following will not work
+addicty will not let you override attributes that are native to ```dict```, so the following will not work
 ```Python
 >>> mapping = Dict()
 >>> mapping.keys = 2
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
-  File "addict/addict.py", line 53, in __setattr__
+  File "addicty/addicty.py", line 53, in __setattr__
     raise AttributeError("'Dict' object attribute '%s' is read-only" % name)
 AttributeError: 'Dict' object attribute 'keys' is read-only
 ```
@@ -112,7 +112,7 @@ However, the following is fine
 just like a regular `dict`. There are no restrictions (other than what a regular dict imposes) regarding what keys you can use.
 
 ### Default values
-For keys that are not in the dictionary, addict behaves like ```defaultdict(Dict)```, so missing keys return an empty ```Dict```
+For keys that are not in the dictionary, addicty behaves like ```defaultdict(Dict)```, so missing keys return an empty ```Dict```
 rather than raising ```KeyError```.
 If this behaviour is not desired, it can be overridden using
 ```Python
@@ -123,7 +123,7 @@ If this behaviour is not desired, it can be overridden using
 but beware that you will then lose the shorthand assignment functionality (```addicted.a.b.c.d.e = 2```).
 
 ### Recursive Fallback to dict
-If you don't feel safe shipping your addict around to other modules, use the `to_dict()`-method, which returns a regular dict clone of the addict dictionary.
+If you don't feel safe shipping your addicty around to other modules, use the `to_dict()`-method, which returns a regular dict clone of the addicty dictionary.
 
 ```Python
 >>> regular_dict = my_addict.to_dict()
@@ -181,14 +181,14 @@ print(counter)
 {1980: {'M': {'blue': 1, 'green': 3}, 'F': {'blue': 1, 'green': 1}}, 1981: {'M': {'blue': 2, 'green': 1}, 'F': {'blue': 2, 'green': 1}}}
 ```
 ### Update
-`addict`s update functionality is altered for convenience from a normal `dict`. Where updating nested item using a `dict` would overwrite it:
+`addicty`s update functionality is altered for convenience from a normal `dict`. Where updating nested item using a `dict` would overwrite it:
 ```Python
 >>> d = {'a': {'b': 3}}
 >>> d.update({'a': {'c': 4}})
 >>> print(d)
 {'a': {'c': 4}}
 ```
-`addict` will recurse and _actually_ update the nested `Dict`. 
+`addicty` will recurse and _actually_ update the nested `Dict`. 
 ```Python
 >>> D = Dict({'a': {'b': 3}})
 >>> D.update({'a': {'c': 4}})
@@ -197,10 +197,10 @@ print(counter)
 ```
 
 ### When is this **especially** useful? 
-This module rose from the entirely tiresome creation of Elasticsearch queries in Python. Whenever you find yourself writing out dicts over multiple lines, just remember that you don't have to. Use *addict* instead.
+This module rose from the entirely tiresome creation of Elasticsearch queries in Python. Whenever you find yourself writing out dicts over multiple lines, just remember that you don't have to. Use *addicty* instead.
 
 ### Perks
-As it is a ```dict```, it will serialize into JSON perfectly, and with the to_dict()-method you can feel safe shipping your addict anywhere.
+As it is a ```dict```, it will serialize into JSON perfectly, and with the to_dict()-method you can feel safe shipping your Dict anywhere.
 
 ### Testing, Development and CI
 Issues and Pull Requests are more than welcome. Feel free to open an issue to spark a discussion around a feature or a bug, or simply reply to the existing ones. As for Pull Requests, keeping in touch with the surrounding code style will be appreciated, and as such, writing tests are crucial. Pull requests and commits will be automatically run against TravisCI and coveralls. 
