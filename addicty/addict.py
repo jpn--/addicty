@@ -253,9 +253,10 @@ class Dict(dict):
         for key, val in self.items():
             if isinstance(val, (type(self), self._Sequence)):
                 val.freeze(shouldFreeze)
+        return self
 
     def unfreeze(self):
-        self.freeze(False)
+        return self.freeze(False)
 
     @classmethod
     def load(
@@ -338,6 +339,8 @@ class Dict(dict):
             kwargs['default_flow_style'] = False
         if 'indent' not in kwargs:
             kwargs['indent'] = 2
+        if 'sort_keys' not in kwargs:
+            kwargs['sort_keys'] = False
         if len(args) and isinstance(args[0], str):
             if isinstance(args[0], str) and args[0].startswith("s3://"):
                 bucket, key = args[0][5:].split("/", 1)
