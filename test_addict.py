@@ -5,8 +5,8 @@ import pickle
 import collections
 import tempfile
 import os
-from addicty import Dict
-
+from addicty import Dict, Configuration
+from addicty.configurator import IsPath, IsA, IsSubconfig
 
 # test whether unittests pass on child classes
 class CHILD_CLASS(Dict):
@@ -694,6 +694,36 @@ class DictTests(unittest.TestCase, AbstractTestsClass):
 
 class ChildDictTests(unittest.TestCase, AbstractTestsClass):
     dict_class = CHILD_CLASS
+
+
+class _SubConfigurationDemo(Configuration):
+    key1 = IsA(str)
+    key2 = IsA(int)
+
+
+class _ConfigurationDemo(Configuration):
+    output_dir = IsPath(
+        doc="Path to outputs directory.",
+        create=True,
+    )
+    data_dir = IsPath(
+        doc="Path to data directory.",
+        default="tmp",
+    )
+    my_int = IsA(int, default=1)
+    my_float = IsA(float, default=0.0)
+    my_sub = IsSubconfig(_SubConfigurationDemo)
+
+
+
+class ConfigTests(unittest.TestCase):
+
+
+
+    def test_load_yaml(self):
+        pass
+
+
 
 """
 Allow for these test cases to be run from the command line

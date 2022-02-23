@@ -1,6 +1,27 @@
 import os
+import types
+import collections.abc
 
 NO_DEFAULT = "< NO DEFAULT >"
+
+
+def _deep_isinstance(obj, kind):
+    try:
+        return isinstance(obj, kind)
+    except TypeError as err:
+        for k in kind:
+            if isinstance(k, types.GenericAlias):
+                outer = k.__origin__
+                inner = k.__args__
+                if issubclass(outer, collections.abc.Sequence):
+                    if isinstance(obj, collections.abc.Sequence):
+                        for i in obj:
+                            if not isinstance(i, inner):
+                                return False
+                        else:
+                            return True
+        else:
+            raise
 
 
 class IsA:
@@ -67,7 +88,7 @@ class IsA:
         # self : IsA
         # obj : instance of parent class that has `self` as a member
         # value : the new value that is trying to be assigned
-        if value is not None and not isinstance(value, self.required_types):
+        if value is not None and not _deep_isinstance(value, self.required_types):
             if self.coerce:
                 try:
                     value = self.required_types[0](value)
@@ -106,7 +127,7 @@ class IsPath(IsA):
         # self : Path
         # obj : instance of parent class that has `self` as a member
         # value : the new value that is trying to be assigned
-        if value is not None and not isinstance(value, self.required_types):
+        if value is not None and not _deep_isinstance(value, self.required_types):
             if self.coerce:
                 try:
                     value = self.required_types[0](value)
@@ -118,6 +139,8 @@ class IsPath(IsA):
             raise FileNotFoundError(value)
         if self._isdir and not os.path.isdir(value):
             raise NotADirectoryError(value)
+        if self._create and not os.path.isdir(value):
+            os.makedirs(value)
         setattr(obj, self.private_name, value)
 
 
@@ -136,7 +159,7 @@ class IsSubconfig(IsA):
         # self : Path
         # obj : instance of parent class that has `self` as a member
         # value : the new value that is trying to be assigned
-        if value is not None and not isinstance(value, self.required_types[1:]):
+        if value is not None and not _deep_isinstance(value, self.required_types[1:]):
             if self.coerce:
                 try:
                     value = self.required_types[1](**value)
@@ -153,7 +176,8 @@ class Configuration:
         if name[0]=="_" and name[-1] != "_":
             super().__setattr__(name, value)
         else:
-            if not hasattr(self, name):
+            attr_defined = name in self.__class__.__dict__ or name in {'load',}
+            if not attr_defined:
                 try:
                     frozen = self._frozen
                 except AttributeError:
@@ -164,7 +188,7 @@ class Configuration:
             super().__setattr__(name, value)
 
     def __init__(self, **kwargs):
-        self._frozen = False
+        self._frozen = True
         for k, v in kwargs.items():
             setattr(self, k, v)
         self._frozen = True
@@ -183,6 +207,40 @@ class Configuration:
         setattr(self, key, value)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__}>"
+        s = f"### {self.__class__.__name__} ###"
+        for k, v in self.__class__.__dict__.items():
+            if isinstance(v, IsA):
+                nested_repr = repr(getattr(self, k))
+                if "\n" in nested_repr:
+                    nested_repr = "\n  " + nested_repr.replace("\n", "\n  ")
+                s += f"\n{k}: {nested_repr}"
+        return s
 
+    @classmethod
+    def load(cls, *filenames, **kwargs):
+        from .addict import load
+        return cls(**load(*filenames, **kwargs))
+
+
+class _SubConfigurationDemo(Configuration):
+    key1 = IsA(str)
+    key2 = IsA(int)
+
+
+class _ConfigurationDemo(Configuration):
+
+    data_dir = IsPath(
+        default="/tmp",
+        doc="Path to data directory.",
+        exists=True,
+    )
+
+    output_dir = IsPath(
+        doc="Path to model outputs directory.",
+        create=True,
+    )
+
+    ii = IsA(int, default=1)
+    ff = IsA(float, default=0.0)
+    kk = IsSubconfig(_SubConfigurationDemo)
 
