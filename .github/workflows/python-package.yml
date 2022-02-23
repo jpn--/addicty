@@ -41,16 +41,26 @@ jobs:
       run: |
         pytest --cov=addicty
         coveralls --service=github
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
     - name: Check for clean version
       run: |
         echo VERSION="$(python -m setuptools_scm)" >> $GITHUB_ENV
     - name: Build wheel
-      if: "${{ matrix.python-version }} == '3.9' & !contains(env.VERSION, '+')"
+      if: "!contains(env.VERSION, '+')"
       run: |
         python -m pip install --upgrade build
         python -m build
     - name: Publish to PyPI
-      if: "${{ matrix.python-version }} == '3.9' & !contains(env.VERSION, '+')"
+      if: "!contains(env.VERSION, '+')"
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
