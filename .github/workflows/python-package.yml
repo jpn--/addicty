@@ -45,7 +45,7 @@ jobs:
       run: |
         echo VERSION="$(python -m setuptools_scm)" >> $GITHUB_ENV
     - name: Publish to PyPI
-      if: "!contains(env.VERSION, '+')"
+      if: "${{ matrix.python-version }} == '3.9' & !contains(env.VERSION, '+')"
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
