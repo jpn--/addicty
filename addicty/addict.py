@@ -23,6 +23,9 @@ class List(list):
             if isinstance(val, (self._Mapping, type(self))):
                 val.freeze(shouldFreeze)
 
+    def _unspecialize(self):
+        return self.to_list()
+
     def to_list(self):
         base = []
         for value in self:
@@ -149,32 +152,35 @@ class Dict(dict):
     def __delattr__(self, name):
         del self[name]
 
+    def _unspecialize(self):
+        return self.to_dict()
+
     def to_dict(self):
         base = {}
         for key, value in self.items():
             if isinstance(value, type(self)):
-                base[key] = value.to_dict()
+                base[key] = value._unspecialize()
             elif isinstance(value, self._Sequence):
                 try:
                     base[key] = list(
-                        item.to_dict() if isinstance(item, (type(self), self._Sequence)) else
+                        item._unspecialize() if isinstance(item, (type(self), self._Sequence)) else
                         item for item in value)
                 except TypeError:
                     # some subclasses don't implement a constructor that
                     # accepts a generator, e.g. namedtuple
                     base[key] = list(*(
-                        item.to_dict() if isinstance(item, (type(self), self._Sequence)) else
+                        item._unspecialize() if isinstance(item, (type(self), self._Sequence)) else
                         item for item in value))
             elif isinstance(value, (list, tuple)):
                 try:
                     base[key] = type(value)(
-                        item.to_dict() if isinstance(item, (type(self), self._Sequence)) else
+                        item.to_dict_unspecialize() if isinstance(item, (type(self), self._Sequence)) else
                         item for item in value)
                 except TypeError:
                     # some subclasses don't implement a constructor that
                     # accepts a generator, e.g. namedtuple
                     base[key] = type(value)(*(
-                        item.to_dict() if isinstance(item, (type(self), self._Sequence)) else
+                        item._unspecialize() if isinstance(item, (type(self), self._Sequence)) else
                         item for item in value))
             else:
                 base[key] = value
@@ -349,7 +355,7 @@ class Dict(dict):
             if os.path.exists(args[0]):
                 raise FileExistsError(args[0])
             dirname = os.path.dirname(args[0])
-            if not os.path.exists(dirname):
+            if dirname and not os.path.exists(dirname):
                 os.makedirs(dirname)
             with open(args[0], 'w') as f:
                 yaml.safe_dump(self.to_dict(), f, **kwargs)
