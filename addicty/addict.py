@@ -174,7 +174,7 @@ class Dict(dict):
             elif isinstance(value, (list, tuple)):
                 try:
                     base[key] = type(value)(
-                        item.to_dict_unspecialize() if isinstance(item, (type(self), self._Sequence)) else
+                        item._unspecialize() if isinstance(item, (type(self), self._Sequence)) else
                         item for item in value)
                 except TypeError:
                     # some subclasses don't implement a constructor that
