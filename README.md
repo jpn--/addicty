@@ -39,7 +39,7 @@ or through `conda`
 conda install addicty -c conda-forge
 ```
 
-Addicty runs on Python 3.9. 
+Addicty runs on Python 3.9 or later. 
 
 ### Usage
 addicty inherits from ```dict```, but is more flexible in terms of accessing and setting its values.
