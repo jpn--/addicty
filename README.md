@@ -7,7 +7,7 @@ and writing YAML files, to files and to/from AWS S3.
 addicty is a Python module that gives you dictionaries whose values are both gettable and settable using attributes, in addition to standard item-syntax.
 
 This means that you **don't have to** write dictionaries like this anymore:
-```Python
+```{python}
 body = {
     'query': {
         'filtered': {
@@ -22,7 +22,7 @@ body = {
 }
 ```
 Instead, you can simply write the following three lines:
-```Python
+```{python}
 body = Dict()
 body.query.filtered.query.match.description = 'addictive'
 body.query.filtered.filter.term.created_by = 'Mats'
@@ -45,7 +45,7 @@ Addicty runs on Python 3.9 or later.
 addicty inherits from ```dict```, but is more flexible in terms of accessing and setting its values.
 Working with dictionaries are now a *joy*! Setting the items of a nested Dict is a *dream*:
 
-```Python
+```{python}
 >>> from addicty import Dict
 >>> mapping = Dict()
 >>> mapping.a.b.c.d.e = 2
@@ -55,19 +55,19 @@ Working with dictionaries are now a *joy*! Setting the items of a nested Dict is
 
 If the `Dict` is instantiated with any iterable values, it will iterate through and clone these values, and turn `dict`s into `Dict`s.
 Hence, the following works
-```Python
+```{python}
 >>> mapping = {'a': [{'b': 3}, {'b': 3}]}
 >>> dictionary = Dict(mapping)
 >>> dictionary.a[0].b
 3
 ```
 but `mapping['a']` is no longer the same reference as `dictionary['a']`.
-```Python
+```{python}
 >>> mapping['a'] is dictionary['a']
 False
 ```
 This behavior is limited to the constructor, and not when items are set using attribute or item syntax, references are untouched:
-```Python
+```{python}
 >>> a = Dict()
 >>> b = [1, 2, 3]
 >>> a.b = b
@@ -77,21 +77,21 @@ True
 
 ### Stuff to keep in mind
 Remember that ```int```s are not valid attribute names, so keys of the dict that are not strings must be set/get with the get-/setitem syntax
-```Python
+```{python}
 >>> addicted = Dict()
 >>> addicted.a.b.c.d.e = 2
 >>> addicted[2] = [1, 2, 3]
 {2: [1, 2, 3], 'a': {'b': {'c': {'d': {'e': 2}}}}}
 ```
 However feel free to mix the two syntaxes:
-```Python
+```{python}
 >>> addicted.a.b['c'].d.e
 2
 ```
 
 ### Attributes like keys, items etc.
 addicty will not let you override attributes that are native to ```dict```, so the following will not work
-```Python
+```{python}
 >>> mapping = Dict()
 >>> mapping.keys = 2
 Traceback (most recent call last):
@@ -101,7 +101,7 @@ Traceback (most recent call last):
 AttributeError: 'Dict' object attribute 'keys' is read-only
 ```
 However, the following is fine
-```Python
+```{python}
 >>> a = Dict()
 >>> a['keys'] = 2
 >>> a
@@ -115,7 +115,7 @@ just like a regular `dict`. There are no restrictions (other than what a regular
 For keys that are not in the dictionary, addicty behaves like ```defaultdict(Dict)```, so missing keys return an empty ```Dict```
 rather than raising ```KeyError```.
 If this behaviour is not desired, it can be overridden using
-```Python
+```{python}
 >>> class DictNoDefault(Dict):
 >>>     def __missing__(self, key):
 >>>         raise KeyError(key)
@@ -125,7 +125,7 @@ but beware that you will then lose the shorthand assignment functionality (```ad
 ### Recursive Fallback to dict
 If you don't feel safe shipping your addicty around to other modules, use the `to_dict()`-method, which returns a regular dict clone of the addicty dictionary.
 
-```Python
+```{python}
 >>> regular_dict = my_addict.to_dict()
 >>> regular_dict.a = 2
 Traceback (most recent call last):
@@ -133,7 +133,7 @@ Traceback (most recent call last):
 AttributeError: 'dict' object has no attribute 'a'
 ```
 This is perfect for when you wish to create a nested Dict in a few lines, and then ship it on to a different module. 
-```Python
+```{python}
 body = Dict()
 body.query.filtered.query.match.description = 'addictive'
 body.query.filtered.filter.term.created_by = 'Mats'
@@ -145,7 +145,7 @@ third_party_module.search(query=body.to_dict())
 
 Consider this data:
 
-```python
+```{python}
 data = [
     {'born': 1980, 'gender': 'M', 'eyes': 'green'},
     {'born': 1980, 'gender': 'F', 'eyes': 'green'},
@@ -164,7 +164,7 @@ data = [
 
 If you want to count how many people were born in `born` of gender `gender` with `eyes` eyes, you can easily calculate this information:
 
-```python
+```{python}
 counter = Dict()
 
 for row in data:
@@ -182,14 +182,14 @@ print(counter)
 ```
 ### Update
 `addicty`s update functionality is altered for convenience from a normal `dict`. Where updating nested item using a `dict` would overwrite it:
-```Python
+```{python}
 >>> d = {'a': {'b': 3}}
 >>> d.update({'a': {'c': 4}})
 >>> print(d)
 {'a': {'c': 4}}
 ```
 `addicty` will recurse and _actually_ update the nested `Dict`. 
-```Python
+```{python}
 >>> D = Dict({'a': {'b': 3}})
 >>> D.update({'a': {'c': 4}})
 >>> print(D)
